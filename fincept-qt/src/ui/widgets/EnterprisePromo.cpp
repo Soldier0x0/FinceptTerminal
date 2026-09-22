@@ -1,6 +1,7 @@
 #include "ui/widgets/EnterprisePromo.h"
 
 #include "core/config/AppConfig.h"
+#include "core/config/LocalMode.h"
 #include "ui/theme/Theme.h"
 
 #include <QCheckBox>
@@ -239,6 +240,8 @@ void UpgradeDialog::set_startup_prompt_enabled(bool enabled) {
 }
 
 void UpgradeDialog::show_now(QWidget* parent) {
+    if (fincept::local_mode::enabled())
+        return;
     if (ent_headless_platform())
         return;
     auto* dlg = new UpgradeDialog(parent);
@@ -249,6 +252,8 @@ void UpgradeDialog::show_now(QWidget* parent) {
 }
 
 void UpgradeDialog::maybe_show_at_startup(QWidget* parent) {
+    if (fincept::local_mode::enabled())
+        return;
     if (!startup_prompt_enabled())
         return;
     show_now(parent);

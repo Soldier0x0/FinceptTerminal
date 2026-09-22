@@ -4,10 +4,12 @@
 
 #include "auth/AuthManager.h"
 #include "core/config/AppConfig.h"
+#include "core/config/LocalMode.h"
 #include "core/logging/Logger.h"
 #include "storage/cache/CacheManager.h"
 
 #include <QJsonDocument>
+#include <QMetaObject>
 #include <QJsonParseError>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
@@ -133,6 +135,18 @@ mcp::ToolResult QuantLibClient::parse_response(int http_status, const QByteArray
 // ── Async call ───────────────────────────────────────────────────────────────
 
 void QuantLibClient::call(const QString& endpoint, const QJsonObject& body, QuantLibCallback callback) {
+    if (fincept::local_mode::enabled()) {
+        // api.fincept.in/quantlib is a paid Fincept service. Until the local
+        // QuantLib backend lands (spec: local-quant) every call fails fast
+        // with a readable message instead of an HTTP 401 after a round-trip.
+        mcp::ToolResult r;
+        r.success = false;
+        r.error = QStringLiteral("QuantLib cloud API is disabled in local-only mode.");
+        LOG_DEBUG(kQuantLibClientTag, "Local-only mode — refusing call to " + endpoint);
+        QMetaObject::invokeMethod(
+            this, [callback = std::move(callback), r]() { callback(r); }, Qt::QueuedConnection);
+        return;
+    }
     // Cache GET endpoints (static reference data) and query-param endpoints
     const bool cacheable = is_get_endpoint(endpoint) || is_query_param_endpoint(endpoint);
     if (cacheable) {

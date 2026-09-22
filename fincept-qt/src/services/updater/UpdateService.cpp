@@ -1,5 +1,6 @@
 #include "services/updater/UpdateService.h"
 
+#include "core/config/LocalMode.h"
 #include "core/logging/Logger.h"
 #include "services/wallet/Ed25519Verifier.h"
 
@@ -147,6 +148,12 @@ bool UpdateService::is_newer(const QString& local, const QString& remote) {
 // ── Public entry point ──────────────────────────────────────────────────────
 
 void UpdateService::check_for_updates(bool silent) {
+    if (fincept::local_mode::enabled()) {
+        // This fork has no release feed; the upstream check would either 404
+        // or offer upstream binaries that undo local-only mode.
+        LOG_DEBUG("UpdateService", "Local-only mode — update check skipped");
+        return;
+    }
     if (in_progress_) {
         LOG_INFO("UpdateService", "Check already in progress — ignoring duplicate call");
         return;
