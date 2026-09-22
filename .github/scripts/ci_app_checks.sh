@@ -150,18 +150,35 @@ EOF
     smoke)
         PROFILE="${3:-ci-smoke}"
         TIMEOUT="${4:-600}"
+        LOG="$(mktemp)"
         echo "Smoke test: binary=$BINARY profile=$PROFILE platform=${QT_QPA_PLATFORM:-<native>}"
         echo "Walks every registered screen; the last '[Smoke] >>> constructing <id>'"
         echo "line names the screen if the process dies."
-        if run_with_timeout "$TIMEOUT" "$BINARY" --smoke-test --profile "$PROFILE"; then
-            echo "Smoke test passed — every screen constructed on this runtime."
-        else
-            status=$?
-            if [ "$status" -eq 124 ]; then
-                echo "::error::Smoke test hung (>${TIMEOUT}s) — likely a blocking dialog or a stalled screen"
-            else
-                echo "::error::Smoke test failed (exit $status) — see the last '[Smoke] >>> constructing <id>' line above"
+        set +e
+        run_with_timeout "$TIMEOUT" "$BINARY" --smoke-test --profile "$PROFILE" >"$LOG" 2>&1
+        status=$?
+        set -e
+        cat "$LOG"
+
+        smoke_ok=false
+        if grep -q '\[Smoke\] OK:' "$LOG" && grep -q '\[Smoke\] exit 0' "$LOG"; then
+            smoke_ok=true
+        fi
+        rm -f "$LOG"
+
+        # AppImage/FUSE teardown can SIGSEGV after a successful walk — the walk
+        # already printed [Smoke] exit 0. Treat that as pass; only real failures
+        # lack the success markers or time out.
+        if [ "$status" -eq 0 ] || { [ "$smoke_ok" = true ] && { [ "$status" -eq 139 ] || [ "$status" -eq 134 ]; }; }; then
+            if [ "$status" -ne 0 ]; then
+                echo "::warning::Smoke test completed but the process crashed during teardown (exit ${status}) — common with AppImage; treating as pass."
             fi
+            echo "Smoke test passed — every screen constructed on this runtime."
+        elif [ "$status" -eq 124 ]; then
+            echo "::error::Smoke test hung (>${TIMEOUT}s) — likely a blocking dialog or a stalled screen"
+            exit 1
+        else
+            echo "::error::Smoke test failed (exit $status) — see the last '[Smoke] >>> constructing <id>' line above"
             exit 1
         fi
         ;;

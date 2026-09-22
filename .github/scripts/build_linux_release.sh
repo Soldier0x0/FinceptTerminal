@@ -141,14 +141,7 @@ if command -v zsyncmake >/dev/null 2>&1; then
   zsyncmake "build/${OUTPUT}" -o "build/${OUTPUT}.zsync" || true
 fi
 
-# ── Smoke-test AppImage ──────────────────────────────────────────────────────
-APPIMAGE="build/${OUTPUT}"
-chmod +x "${APPIMAGE}"
-export QT_QPA_PLATFORM=offscreen
-export QTWEBENGINE_DISABLE_SANDBOX=1
-bash "${GITHUB_WORKSPACE}/.github/scripts/ci_app_checks.sh" smoke "${APPIMAGE}" ci-smoke 600
-
-# ── .deb ─────────────────────────────────────────────────────────────────────
+# ── .deb (before AppImage smoke — packaging must not depend on teardown) ───
 DEB_NAME="fincept-terminal_${VERSION}_amd64"
 DEB_ROOT="build/${DEB_NAME}"
 
@@ -171,6 +164,13 @@ EOF
 dpkg-deb --build --root-owner-group "${DEB_ROOT}"
 mv "build/${DEB_NAME}.deb" "build/FinceptTerminal-${VERSION}-linux-x64.deb"
 echo "Built: FinceptTerminal-${VERSION}-linux-x64.deb ($(du -sh "build/FinceptTerminal-${VERSION}-linux-x64.deb" | cut -f1))"
+
+# ── Smoke-test AppImage (after .deb is staged) ───────────────────────────────
+APPIMAGE="build/${OUTPUT}"
+chmod +x "${APPIMAGE}"
+export QT_QPA_PLATFORM=offscreen
+export QTWEBENGINE_DISABLE_SANDBOX=1
+bash "${GITHUB_WORKSPACE}/.github/scripts/ci_app_checks.sh" smoke "${APPIMAGE}" ci-smoke 600
 
 if [ -n "${GITHUB_ENV:-}" ]; then
   echo "VERSION=${VERSION}" >> "${GITHUB_ENV}"
