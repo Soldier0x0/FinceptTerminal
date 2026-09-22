@@ -1,11 +1,11 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Discord
-    url: https://discord.gg/ae87a8ygbN
-    about: Ask a question, discuss a feature idea, or get help before opening an issue.
   - name: Read CONTRIBUTING.md first
-    url: https://github.com/Fincept-Corporation/FinceptTerminal/blob/main/.github/CONTRIBUTING.md
-    about: PRs must link a labeled, scope-approved issue. Please read the contribution policy before opening an issue that you intend to fix yourself.
-  - name: Email support
-    url: mailto:support@fincept.in
-    about: Commercial / security / licensing questions.
+    url: https://github.com/Soldier0x0/FinceptTerminal/blob/main/.github/CONTRIBUTING.md
+    about: Fork contribution policy — no upstream scope-approved issue required.
+  - name: Local-only mode docs
+    url: https://github.com/Soldier0x0/FinceptTerminal/blob/main/docs/LOCAL_ONLY_MODE.md
+    about: What changes in this fork and how to turn local-only mode off.
+  - name: Upstream Fincept Terminal
+    url: https://github.com/Fincept-Corporation/FinceptTerminal
+    about: Original project — use their repo and CONTRIBUTING.md for upstream contributions.

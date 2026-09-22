@@ -227,9 +227,7 @@ void SectorResolver::resolve_async(const QString& symbol) {
         if (looks_like_canadian_bare(symbol)) {
             const QString tsx_symbol = symbol + ".TO";
             // `finish` / `give_up` already carry `symbol`, so it is not captured again.
-            MarketDataService::instance().fetch_info(tsx_symbol, [self, finish, give_up](bool ok2, InfoData info2) {
-                if (!self)
-                    return;
+            MarketDataService::instance().fetch_info(tsx_symbol, [finish, give_up](bool ok2, InfoData info2) {
                 if (!ok2) {
                     give_up("both bare and .TO lookups failed");
                     return;

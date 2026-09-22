@@ -1,8 +1,16 @@
-# Contributing to Fincept Terminal
+# Contributing to Fincept Terminal (Soldier0x0 fork)
 
-Fincept Terminal is an open-source native C++20/Qt6 financial intelligence platform with 50+ screens, embedded Python analytics, and 100+ data connectors. This guide is the canonical **how-to** for contributors — build, architecture, conventions.
+This guide covers **how to build and work in this repository**. Contribution
+**policy** (what PRs are accepted on this fork) lives in
+[`.github/CONTRIBUTING.md`](../.github/CONTRIBUTING.md).
 
-> **Before you open a PR**, also read the contribution **policy**: [`.github/CONTRIBUTING.md`](../.github/CONTRIBUTING.md). Policy defines which PRs are accepted (linked approved issue, minimum scope, no auto-formatter churn, etc.); this file covers how to build and where code lives.
+> **Fork notice:** This is
+> [Soldier0x0/FinceptTerminal](https://github.com/Soldier0x0/FinceptTerminal), a
+> personal fork of
+> [Fincept-Corporation/FinceptTerminal](https://github.com/Fincept-Corporation/FinceptTerminal).
+> It defaults to **local-only mode** (no Fincept login, Ollama LLM, no cloud
+> upsell). See [LOCAL_ONLY_MODE.md](./LOCAL_ONLY_MODE.md). Upstream's
+> issue-label and scope-gate rules **do not apply here**.
 
 ---
 
@@ -25,10 +33,10 @@ Fincept Terminal is an open-source native C++20/Qt6 financial intelligence platf
 
 | Area          | Examples                                                          |
 |---------------|-------------------------------------------------------------------|
-| C++ / Qt      | New screens, services, core infrastructure, performance fixes     |
+| C++ / Qt      | Local-mode gates, screens, services, performance fixes              |
 | Python        | Analytics scripts, AI agents, data fetchers                       |
-| Data sources  | Broker integrations, government / market data connectors          |
-| Documentation | Fix broken/outdated docs (see policy for scope)                   |
+| Data sources  | India-focused connectors (NSE/BSE, MFs, gold, bonds)              |
+| Documentation | `LOCAL_ONLY_MODE.md`, fork policy, build notes                    |
 | Testing       | Reproduce bugs, review PRs, write tests                           |
 
 ---
@@ -71,11 +79,14 @@ Optional (speeds up rebuilds): **ccache 4.13.4** on Windows is auto-detected.
 ### Fastest — automated setup script
 
 ```bash
-git clone https://github.com/Fincept-Corporation/FinceptTerminal.git
+git clone https://github.com/Soldier0x0/FinceptTerminal.git
 cd FinceptTerminal
 ./setup.sh      # Linux / macOS — installs toolchain + Qt via aqtinstall, then builds
 setup.bat       # Windows — run from a VS 2022 Developer Command Prompt
 ```
+
+Local-only mode is **on by default** (`FINCEPT_LOCAL_ONLY=ON`). To build with
+upstream cloud behaviour: `cmake --preset linux-release -DFINCEPT_LOCAL_ONLY=OFF`.
 
 ### Manual — CMake presets
 
@@ -117,6 +128,8 @@ cmake --build build/win-release
 ./build/macos-release/FinceptTerminal.app/Contents/MacOS/FinceptTerminal          # macOS
 ```
 
+Smoke test (no GUI): `./build/linux-release/FinceptTerminal --smoke-test`
+
 ---
 
 ## Project Architecture
@@ -143,11 +156,11 @@ finceptTerminal/
 ```
 src/
 ├── app/              # Entry point, MainWindow, routing, splash
-├── core/             # Config, events, logging, Result<T>, session
+├── core/             # Config, events, logging, Result<T>, session, LocalMode
 ├── ui/               # Theme, reusable widgets, tables, charts, navigation
 ├── network/          # http/ and websocket/ clients
 ├── storage/          # SQLite, cache, secure storage, 16 repositories
-├── auth/             # Guest + registered auth, JWT
+├── auth/             # Guest + registered auth, JWT (gated in local mode)
 ├── python/           # Embedded Python bridge, PythonRunner
 ├── datahub/          # DataHub producers/consumers (see DATAHUB_ARCHITECTURE.md)
 ├── services/         # 18 service domains — market data, news, agents, workflow, etc.
@@ -206,6 +219,13 @@ Full detail in `fincept-qt/CLAUDE.md`. These are **non-negotiable** — PRs that
 - **P14.** Logs use the `LOG_*` macros (C++) or `logger` (Python). Never `printf` / `print` / `std::cout`.
 - **D1–D5.** Streaming data flows through the DataHub — never spawn Python directly from a screen. See `fincept-qt/DATAHUB_ARCHITECTURE.md`.
 
+### Local-only mode
+
+When adding features that touch auth, cloud sync, QuantLib API, updates, or LLM
+providers, read [LOCAL_ONLY_MODE.md](./LOCAL_ONLY_MODE.md). Prefer **gating**
+upstream cloud paths behind `fincept::local_mode::enabled()` rather than deleting
+code — keeps future upstream merges feasible.
+
 ---
 
 ## Development Workflow
@@ -213,14 +233,13 @@ Full detail in `fincept-qt/CLAUDE.md`. These are **non-negotiable** — PRs that
 ### Branch naming
 
 ```
-feat/add-options-screen
+cursor/local-only-mode-spec-5a93   # Cloud Agent branches on this fork
+feat/india-mf-defaults
 fix/chart-render-crash
-docs/update-python-guide
-perf/market-data-coalesce
-refactor/broker-http
+docs/local-only-guide
 ```
 
-Never PR from your fork's `main` — always a topic branch.
+Use a topic branch — not `main` — for active work.
 
 ### Commit style
 
@@ -229,17 +248,17 @@ type: short imperative subject line
 
 Optional body explaining why, not what. Wrap at ~72 cols.
 
-Types: feat, fix, docs, refactor, test, chore, perf
+Types: feat, fix, docs, refactor, test, chore, perf, ci
 ```
 
 ### Before you open a PR
 
-1. Confirm the issue you're fixing carries one of: `good-first-issue`, `help-wanted`, `scope:approved` (see [`.github/CONTRIBUTING.md`](../.github/CONTRIBUTING.md)).
-2. Build locally and run the app — verify the fix / feature works end-to-end.
+1. Read [`.github/CONTRIBUTING.md`](../.github/CONTRIBUTING.md) for this fork's policy.
+2. Build locally and run the app (or `--smoke-test`) — verify the change works.
 3. Keep the diff minimal. No auto-formatter churn.
-4. Fill out the PR template honestly; don't tick boxes you didn't verify.
+4. Fill out the PR template honestly.
 
-Review process, scope gate, and close-on-sight list are in [`.github/CONTRIBUTING.md`](../.github/CONTRIBUTING.md).
+There is **no** upstream scope-approved issue requirement on this fork.
 
 ---
 
@@ -250,6 +269,7 @@ Review process, scope gate, and close-on-sight list are in [`.github/CONTRIBUTIN
 | [C++ Guide](./CPP_CONTRIBUTOR_GUIDE.md)                 | Screens, services, core infrastructure, widgets, Qt patterns |
 | [Python Guide](./PYTHON_CONTRIBUTOR_GUIDE.md)           | Analytics modules, data fetchers, AI agents, PythonRunner contract |
 | [Architecture](./ARCHITECTURE.md)                       | System design, module boundaries, data flow               |
+| [Local-only mode](./LOCAL_ONLY_MODE.md)                 | Fork-specific cloud/auth/LLM gating                       |
 
 ---
 
@@ -257,14 +277,15 @@ Review process, scope gate, and close-on-sight list are in [`.github/CONTRIBUTIN
 
 | Channel      | Link                                                                          |
 |--------------|-------------------------------------------------------------------------------|
-| Issues       | [GitHub Issues](https://github.com/Fincept-Corporation/FinceptTerminal/issues) |
-| Discussions  | [GitHub Discussions](https://github.com/Fincept-Corporation/FinceptTerminal/discussions) |
-| Discord      | [discord.gg/ae87a8ygbN](https://discord.gg/ae87a8ygbN)                         |
-| Email        | support@fincept.in                                                             |
+| Issues       | [GitHub Issues](https://github.com/Soldier0x0/FinceptTerminal/issues) |
+| Upstream     | [Fincept-Corporation/FinceptTerminal](https://github.com/Fincept-Corporation/FinceptTerminal) (separate project) |
+| Local-only   | [LOCAL_ONLY_MODE.md](./LOCAL_ONLY_MODE.md)                                     |
 
-Good first issues carry the `good-first-issue` label — those are the right starting point for new contributors.
+For bugs or features in **upstream** Fincept Terminal, use their repository and
+follow their contribution policy.
 
 ---
 
-**Repository:** https://github.com/Fincept-Corporation/FinceptTerminal
+**This fork:** https://github.com/Soldier0x0/FinceptTerminal  
+**Upstream:** https://github.com/Fincept-Corporation/FinceptTerminal  
 **License:** AGPL-3.0-or-later
