@@ -102,12 +102,13 @@ void LlmService::ensure_config() const {
         }
     }
 
-    // Nothing configured — default to Fincept with the session key.
+    // Nothing configured — use the catalog default (ollama in local-only mode,
+    // fincept upstream). Fincept resolves its key below via AuthManager.
     if (provider_.isEmpty()) {
-        provider_ = "fincept";
-        model_ = "MiniMax-M2.7";
-        base_url_ = {};
-        LOG_INFO(kLlmSvcTag, "No LLM provider configured — using Fincept default");
+        provider_ = ProviderCatalog::default_provider();
+        model_ = ProviderCatalog::default_model(provider_);
+        base_url_ = ProviderCatalog::default_base_url(provider_);
+        LOG_INFO(kLlmSvcTag, QString("No LLM provider configured — using %1 default").arg(provider_));
     }
 
     // Fincept key resolves via AuthManager (live session → encrypted

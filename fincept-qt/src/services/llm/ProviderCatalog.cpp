@@ -4,16 +4,36 @@
 // (2026-06-10); update HERE when adding a provider.
 #include "services/llm/ProviderCatalog.h"
 
+#include "core/config/LocalMode.h"
+
 #include <QHash>
 #include <QRegularExpression>
 
 namespace fincept::ai_chat {
 
 const QStringList& ProviderCatalog::known_providers() {
-    static const QStringList kProviders = {"openai",     "anthropic", "gemini",       "groq",    "deepseek",
-                                           "openrouter", "minimax",   "kimi",         "ollama",  "xai",
-                                           "fincept",    "astraflow", "astraflow_cn", "aihubmix"};
-    return kProviders;
+    static const QStringList kAll = {"openai",     "anthropic", "gemini",       "groq",    "deepseek",
+                                     "openrouter", "minimax",   "kimi",         "ollama",  "xai",
+                                     "fincept",    "astraflow", "astraflow_cn", "aihubmix"};
+    static const QStringList kLocal = [] {
+        QStringList out = kAll;
+        out.removeAll(QStringLiteral("fincept"));
+        return out;
+    }();
+    return local_mode::enabled() ? kLocal : kAll;
+}
+
+QString ProviderCatalog::default_provider() {
+    return local_mode::enabled() ? QStringLiteral("ollama") : QStringLiteral("fincept");
+}
+
+QString ProviderCatalog::default_model(const QString& provider) {
+    const QString p = provider.toLower();
+    if (p == "ollama")
+        return QStringLiteral("llama3.1:8b");
+    if (p == "fincept")
+        return QStringLiteral("MiniMax-M2.7");
+    return fallback_models(p).value(0);
 }
 
 // AtlasCloud is banned by Fincept and has been removed as a provider. This hard
@@ -38,7 +58,7 @@ QString ProviderCatalog::display_name(const QString& provider_id) {
         {"kimi", "Kimi"},
         {"ollama", "Ollama"},
         {"xai", "xAI"},
-        {"fincept", "Fincept LLM (recommended)"},
+        {"fincept", "Fincept LLM"},
         {"astraflow", "AstraFlow"},
         {"astraflow_cn", "AstraFlow CN"},
         {"aihubmix", "AIHubMix"},
