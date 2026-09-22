@@ -173,8 +173,9 @@ fincept-qt/scripts/exchange/.cache/
 *.sqlite3
 
 # ── Internal planning docs ────────────────────────────────────
+# Upstream ignores these; this fork tracks its own specs/plans under
+# docs/superpowers/ so they can be reviewed in PRs.
 fincept-qt/docs/superpowers/
-docs/superpowers/
 
 # ── Grill-me session notes ────────────────────────────────────
 .grill-me/
