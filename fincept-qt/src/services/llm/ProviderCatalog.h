@@ -12,7 +12,15 @@ namespace fincept::ai_chat {
 
 class ProviderCatalog {
   public:
+    /// Every selectable provider id. In local-only mode the Fincept-hosted
+    /// provider ("fincept") is omitted — it needs a paid api.fincept.in key.
     static const QStringList& known_providers();
+    /// Provider used when nothing is configured: "ollama" in local-only mode,
+    /// "fincept" otherwise (upstream behaviour).
+    static QString default_provider();
+    /// Starting model for `provider`: "llama3.1:8b" for ollama, "MiniMax-M2.7"
+    /// for fincept, otherwise the first fallback_models() entry (may be empty).
+    static QString default_model(const QString& provider);
     /// Hard block for retired/forbidden providers (currently AtlasCloud). Returns
     /// true for the blocked provider id AND for any base_url pointing at its host,
     /// so it can't be reached even by manually pointing an OpenAI-compatible

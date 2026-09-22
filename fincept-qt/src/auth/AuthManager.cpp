@@ -4,6 +4,7 @@
 #include "auth/GoogleDesktopLogin.h"
 #include "auth/PinManager.h"
 #include "auth/UserApi.h"
+#include "core/config/LocalMode.h"
 #include "core/logging/Logger.h"
 #include "network/http/HttpClient.h"
 #include "storage/repositories/LlmConfigRepository.h"
@@ -138,8 +139,8 @@ void AuthManager::migrate_legacy_plaintext_credentials() {
     // `migrated` flag let a secret found in the session blob authorise deleting
     // the *plaintext key row we never managed to read* — one transient DB error
     // then destroyed the user's only copy of the API key, irrecoverably.
-    bool blob_secrets_migrated = false;  // source 1: "fincept_session"
-    bool legacy_row_migrated = false;    // source 2: "fincept_api_key"
+    bool blob_secrets_migrated = false; // source 1: "fincept_session"
+    bool legacy_row_migrated = false;   // source 2: "fincept_api_key"
 
     // 1. Secrets that came in via the legacy plaintext "fincept_session" blob.
     if (!session_.api_key.isEmpty()) {
@@ -221,6 +222,17 @@ bool AuthManager::needs_pin_setup() const {
 // ── Initialize ───────────────────────────────────────────────────────────────
 
 void AuthManager::initialize() {
+    if (local_mode::enabled()) {
+        // No Fincept session in local-only mode: nothing is loaded, validated
+        // or refreshed. SessionGuard, CloudSyncEngine, the WindowFrame refresh
+        // timers and auto_configure_fincept_llm() all gate on an authenticated
+        // session and therefore stay inert.
+        LOG_INFO("Auth", "Local-only mode — auth disabled, no session will be loaded");
+        session_ = SessionData{};
+        set_loading(false);
+        emit auth_state_changed();
+        return;
+    }
     set_loading(true);
     load_session();
 

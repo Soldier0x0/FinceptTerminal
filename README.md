@@ -1,3 +1,8 @@
+> **This fork builds in local-only mode.** No Fincept login, no `api.fincept.in`
+> traffic, Ollama as the default LLM, no Enterprise/pricing UI. See
+> [docs/LOCAL_ONLY_MODE.md](docs/LOCAL_ONLY_MODE.md) for what changes and how to
+> turn it off. Everything below this note is the upstream README.
+
 > [!IMPORTANT]
 > ## 🔒 Fincept Terminal **Enterprise** — the private edition. Launch price: **90% off, ends soon.**
 > Proprietary real-time data · Multi-agent AI research · Live broker & algo execution · Priority support

@@ -153,7 +153,7 @@ struct EcdsaSig {
 #endif
 
 EcdsaSig ecdsa_sign(const QByteArray& digest, const QByteArray& priv_key_32) {
-    EcdsaSig out;
+    EcdsaSig out{};
     EC_KEY* key = EC_KEY_new_by_curve_name(NID_secp256k1);
     if (!key)
         return out;

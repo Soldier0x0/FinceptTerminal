@@ -35,6 +35,11 @@ GoogleDesktopLogin::GoogleDesktopLogin(QObject* parent) : QObject(parent) {}
 GoogleDesktopLogin::~GoogleDesktopLogin() = default;
 
 void GoogleDesktopLogin::start() {
+    if (server_) {
+        server_->close();
+        server_->deleteLater();
+        server_ = nullptr;
+    }
     server_ = new QTcpServer(this);
     connect(server_, &QTcpServer::newConnection, this, &GoogleDesktopLogin::on_new_connection);
 
@@ -64,6 +69,11 @@ void GoogleDesktopLogin::start() {
     query.addQueryItem(QStringLiteral("desktop_cb"), callback);
     start_url.setQuery(query);
 
+    if (timeout_) {
+        timeout_->stop();
+        timeout_->deleteLater();
+        timeout_ = nullptr;
+    }
     timeout_ = new QTimer(this);
     timeout_->setSingleShot(true);
     connect(timeout_, &QTimer::timeout, this, [this]() { finish_error(tr("Login timed out. Please try again.")); });

@@ -173,8 +173,9 @@ fincept-qt/scripts/exchange/.cache/
 *.sqlite3
 
 # ── Internal planning docs ────────────────────────────────────
+# Upstream ignores these; this fork tracks its own specs/plans under
+# docs/superpowers/ so they can be reviewed in PRs.
 fincept-qt/docs/superpowers/
-docs/superpowers/
 
 # ── Grill-me session notes ────────────────────────────────────
 .grill-me/
@@ -195,3 +196,9 @@ fincept-qt/docs/CRYPTO_WALLET_CONNECT.md
 *.md
 !README.md
 !**/README.md
+# Fork additions: tracked design docs. `plans/` above would otherwise swallow
+# docs/superpowers/plans/, so the directory itself is re-included first.
+!docs/superpowers/
+!docs/superpowers/plans/
+!docs/superpowers/**/*.md
+!docs/LOCAL_ONLY_MODE.md

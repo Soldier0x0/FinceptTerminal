@@ -9,6 +9,7 @@
 #include "auth/lock/LockOverlayController.h"
 #include "core/actions/ActionRegistry.h"
 #include "core/actions/builtin_actions.h"
+#include "core/config/LocalMode.h"
 #include "core/config/ProfileManager.h"
 #include "core/events/EventBus.h"
 #include "core/keys/KeyConfigManager.h"
@@ -916,15 +917,24 @@ WindowFrame::WindowFrame(int window_id, QWidget* parent, const WindowId& adopted
     // If dock layout was restored, the saved tabs are already visible.
     // Otherwise, navigate to dashboard as default.
     auto& auth_mgr = auth::AuthManager::instance();
-    if (auth_mgr.is_authenticated() || auth_mgr.is_loading()) {
-        // If user is authenticated and has a PIN, show lock screen first —
-        // UNLESS this is an additional window opened while an existing
-        // window has already cleared the PIN gate this session.
-        // pin_gate_cleared_ was bootstrapped above from the process-wide
-        // InactivityGuard flag (which is the single source of truth for
-        // "is the terminal locked?"); skipping the prompt here just
-        // mirrors the unlocked state into the new frame.
-        if (auth_mgr.is_authenticated() && auth::PinManager::instance().has_pin() && !pin_gate_cleared_) {
+    if (local_mode::enabled() || auth_mgr.is_authenticated() || auth_mgr.is_loading()) {
+        if (local_mode::enabled()) {
+            // Local-only: no login, no PIN, no pricing gate. Show the shell and
+            // restore the last workspace exactly as the paid-plan path in
+            // on_auth_state_changed() does; the navigate/materialise logic
+            // below then behaves as for a restored paid session.
+            LOG_INFO("WindowFrame", "Local-only mode — skipping auth stack, showing shell");
+            set_shell_visible(true);
+            stack_->setCurrentIndex(1);
+            layout::WorkspaceShell::load_last_or_default();
+        } else if (auth_mgr.is_authenticated() && auth::PinManager::instance().has_pin() && !pin_gate_cleared_) {
+            // If user is authenticated and has a PIN, show lock screen first —
+            // UNLESS this is an additional window opened while an existing
+            // window has already cleared the PIN gate this session.
+            // pin_gate_cleared_ was bootstrapped above from the process-wide
+            // InactivityGuard flag (which is the single source of truth for
+            // "is the terminal locked?"); skipping the prompt here just
+            // mirrors the unlocked state into the new frame.
             LOG_INFO("WindowFrame", "Session restored — showing PIN unlock");
             lock_screen_->show_unlock();
             locked_ = true;
@@ -950,7 +960,7 @@ WindowFrame::WindowFrame(int window_id, QWidget* parent, const WindowId& adopted
         // (b) pay the cost of constructing DashboardScreen just to discard it.
         // If apply_layout subsequently fails, the caller is responsible for
         // falling back to a default screen.
-        if (!dock_restored && adopted_uuid.is_null()) {
+        if (!dock_restored && adopted_uuid.is_null() && stack_->currentIndex() == 1) {
             // Defer navigation so the window can paint its chrome (toolbar,
             // tab bar, status bar) before the first screen factory runs.
             // DashboardScreen construction can take 200-500ms; without this

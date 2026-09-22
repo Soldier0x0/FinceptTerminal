@@ -14,6 +14,8 @@
 #include "core/components/ComponentCatalog.h"
 #include "core/config/AppConfig.h"
 #include "core/config/AppPaths.h"
+#include "core/config/LocalMode.h"
+#include "core/config/LocalModeBootstrap.h"
 #include "core/config/ProfileManager.h"
 #include "core/crash/CrashHandler.h"
 #include "core/currency/CurrencyManager.h"
@@ -536,6 +538,13 @@ int main(int argc, char* argv[]) {
 
     // ── Group 2: Fincept Cloud sync ─────────────────────────────────────────
     auto init_cloud_sync = []() {
+        // Local-only mode: no Fincept account, so there is nothing to sync
+        // with. Skip adapter registration entirely so the engine never
+        // initialises or touches CloudClient.
+        if (fincept::local_mode::enabled()) {
+            LOG_INFO("App", "Local-only mode — Fincept Cloud sync disabled");
+            return;
+        }
         // Drains the durable outbox (push) + pulls cloud→local. NOT a DataHub
         // producer; reads stay on the local repo cache. Every adapter must be
         // registered before initialize(), which is why they share one group.
@@ -873,6 +882,16 @@ int main(int argc, char* argv[]) {
         // account map is populated from the now-open DB, so configured brokers
         // survive restarts instead of vanishing.
         fincept::trading::AccountManager::instance().reload_from_db();
+
+        // Local-only mode: drop the Fincept LLM row seeded by migration v002
+        // and make sure a free provider (Ollama) is active. Must run after
+        // migrations (Database::open) and before any WindowFrame constructs
+        // LlmService consumers. No-op in upstream mode.
+        {
+            const QString active = fincept::local_mode::bootstrap_llm_defaults();
+            LOG_INFO("App",
+                     QString("Active LLM provider after bootstrap: %1").arg(active.isEmpty() ? "<none>" : active));
+        }
 
         // Prune news articles older than 30 days — deferred to run after the event loop
         // starts so the startup critical path is not blocked.

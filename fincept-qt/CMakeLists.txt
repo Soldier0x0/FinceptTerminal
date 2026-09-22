@@ -365,6 +365,13 @@ add_compile_definitions(NOMINMAX WIN32_LEAN_AND_MEAN)
 # .github/workflows/build-cpp.yml. Original tracking item: AUDIT_2026-07-25.md §E.
 option(FINCEPT_BUILD_TESTS "Build the Fincept Terminal test suite" OFF)
 
+# ── Local-only mode (this fork) ──────────────────────────────────────────────
+# ON: no Fincept login/PIN/pricing, no api.fincept.in traffic, Ollama default
+# LLM, no Enterprise promo. OFF restores upstream behaviour. Runtime override:
+# FINCEPT_LOCAL_ONLY=0|1 in the environment. See docs/LOCAL_ONLY_MODE.md.
+option(FINCEPT_LOCAL_ONLY
+    "Local-only build: no Fincept login/cloud, Ollama default LLM, no Enterprise promo" ON)
+
 # ── Alpha Arena live-mode geofencing ─────────────────────────────────────────
 # Live mode is gated by best-effort locale detection in AlphaArenaScreen.
 # A handful of jurisdictions (US, NK, IR, …) are blocked. This flag exists
@@ -835,6 +842,8 @@ set(CORE_SOURCES
     src/core/actions/ActionRegistry.cpp
     src/core/actions/builtin_actions.cpp
     src/core/config/AppConfig.cpp
+    src/core/config/LocalMode.cpp
+    src/core/config/LocalModeBootstrap.cpp
     src/core/config/AppPaths.cpp
     src/core/config/ProfileManager.cpp
     src/core/logging/Logger.cpp
@@ -3295,6 +3304,12 @@ target_compile_definitions(FinceptTerminal PRIVATE
     FINCEPT_VERSION_STRING="${CMAKE_PROJECT_VERSION}")
 
 # ── Optional feature compile definitions (applied after add_executable) ──────
+if(FINCEPT_LOCAL_ONLY)
+    target_compile_definitions(FinceptTerminal PRIVATE FINCEPT_LOCAL_ONLY=1)
+else()
+    target_compile_definitions(FinceptTerminal PRIVATE FINCEPT_LOCAL_ONLY=0)
+endif()
+
 if(FINCEPT_HAS_PRIVATE_HEADERS)
     target_compile_definitions(FinceptTerminal PRIVATE FINCEPT_HAS_QXLSX)
 endif()
@@ -4189,6 +4204,7 @@ if(WIN32 AND FINCEPT_WIN_SIGN_CERT)
 message(STATUS "  Windows signing   : ON   (target: sign-windows)")
 endif()
 message(STATUS "  Tests             : ${FINCEPT_BUILD_TESTS}")
+message(STATUS "  Local-only mode   : ${FINCEPT_LOCAL_ONLY}")
 message(STATUS "============================================================")
 message(STATUS "")
 

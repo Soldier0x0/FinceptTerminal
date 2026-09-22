@@ -119,4 +119,17 @@ fincept_add_test(tst_order_validator
     tst_order_validator.cpp
     "${PROJECT_SOURCE_DIR}/src/trading/OrderValidator.cpp")
 
-message(STATUS "Fincept tests: tst_broker_modify_fields, tst_result, tst_order_validator")
+# src/core/config/LocalMode.{h,cpp} — leaf unit, Qt Core only. The app option
+# FINCEPT_LOCAL_ONLY is deliberately NOT defined for this target, so the test
+# exercises resolve() with both compiled defaults and enabled() falls back to 0.
+fincept_add_test(tst_local_mode
+    tst_local_mode.cpp
+    "${PROJECT_SOURCE_DIR}/src/core/config/LocalMode.cpp")
+
+# src/services/llm/ProviderCatalog.{h,cpp} — Qt Core + LocalMode only. Two TUs.
+fincept_add_test(tst_provider_catalog
+    tst_provider_catalog.cpp
+    "${PROJECT_SOURCE_DIR}/src/services/llm/ProviderCatalog.cpp"
+    "${PROJECT_SOURCE_DIR}/src/core/config/LocalMode.cpp")
+
+message(STATUS "Fincept tests: tst_broker_modify_fields, tst_result, tst_order_validator, tst_local_mode, tst_provider_catalog")

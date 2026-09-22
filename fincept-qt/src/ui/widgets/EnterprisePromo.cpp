@@ -1,6 +1,7 @@
 #include "ui/widgets/EnterprisePromo.h"
 
 #include "core/config/AppConfig.h"
+#include "core/config/LocalMode.h"
 #include "ui/theme/Theme.h"
 
 #include <QCheckBox>
@@ -146,8 +147,7 @@ UpgradeDialog::UpgradeDialog(QWidget* parent) : QDialog(parent) {
     // enterprise namespace. `this` stays as connect()'s context object (3rd
     // arg) for lifetime, but capturing it would be unused and Clang builds
     // with -Werror=unused-lambda-capture.
-    connect(compare_btn_, &QPushButton::clicked, this,
-            []() { enterprise::open_url(enterprise::comparison_url()); });
+    connect(compare_btn_, &QPushButton::clicked, this, []() { enterprise::open_url(enterprise::comparison_url()); });
     buttons->addWidget(compare_btn_);
 
     primary_btn_ = new QPushButton;
@@ -177,11 +177,11 @@ UpgradeDialog::UpgradeDialog(QWidget* parent) : QDialog(parent) {
                           "#upgradePrice{color:%3;font-size:13px;font-weight:700;background:transparent;}"
                           "#upgradeNote{color:%6;font-size:11px;background:transparent;}"
                           "#upgradeDontShow{color:%6;font-size:11px;background:transparent;}")
-                      .arg(colors::BG_SURFACE())     // %1
-                      .arg(colors::BORDER_DIM())     // %2
-                      .arg(colors::AMBER())          // %3
-                      .arg(colors::TEXT_PRIMARY())   // %4
-                      .arg(colors::TEXT_SECONDARY()) // %5
+                      .arg(colors::BG_SURFACE())      // %1
+                      .arg(colors::BORDER_DIM())      // %2
+                      .arg(colors::AMBER())           // %3
+                      .arg(colors::TEXT_PRIMARY())    // %4
+                      .arg(colors::TEXT_SECONDARY())  // %5
                       .arg(colors::TEXT_TERTIARY())); // %6
 
     retranslateUi();
@@ -239,6 +239,8 @@ void UpgradeDialog::set_startup_prompt_enabled(bool enabled) {
 }
 
 void UpgradeDialog::show_now(QWidget* parent) {
+    if (fincept::local_mode::enabled())
+        return;
     if (ent_headless_platform())
         return;
     auto* dlg = new UpgradeDialog(parent);
@@ -249,6 +251,8 @@ void UpgradeDialog::show_now(QWidget* parent) {
 }
 
 void UpgradeDialog::maybe_show_at_startup(QWidget* parent) {
+    if (fincept::local_mode::enabled())
+        return;
     if (!startup_prompt_enabled())
         return;
     show_now(parent);

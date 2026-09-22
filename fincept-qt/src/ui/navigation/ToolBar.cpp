@@ -1,6 +1,7 @@
 #include "ui/navigation/ToolBar.h"
 
 #include "auth/AuthManager.h"
+#include "core/config/LocalMode.h"
 #include "ui/pushpins/PushpinBar.h"
 #include "ui/theme/Theme.h"
 #include "ui/theme/ThemeManager.h"
@@ -146,6 +147,23 @@ ToolBar::ToolBar(QWidget* parent) : QWidget(parent) {
     connect(logout_btn_, &QPushButton::clicked, this, &ToolBar::logout_clicked);
     hl->addWidget(logout_btn_);
 
+    if (local_mode::enabled()) {
+        // No Fincept account: credits, plan, Enterprise CTA and LOGOUT have
+        // nothing to act on. Hidden rather than skipped so separators_ indices
+        // used by apply_responsive_layout() stay valid.
+        credits_label_->hide();
+        plan_btn_->hide();
+        upgrade_btn_->hide();
+        logout_btn_->hide();
+        // separators_ order: 0 before FINCEPT, 1 after LIVE, 2 after pushpins,
+        // 3 after user, 4 after credits, 5 after UPGRADE, 6 after CHAT.
+        if (separators_.size() >= 7) {
+            separators_[4]->hide();
+            separators_[5]->hide();
+            separators_[6]->hide();
+        }
+    }
+
     retranslateUi();
 
     clock_timer_ = new QTimer(this);
@@ -290,14 +308,14 @@ void ToolBar::apply_responsive_layout(int w) {
         live_dot_->setVisible(show_live);
     if (live_label_)
         live_label_->setVisible(show_live);
-    if (credits_label_)
+    if (credits_label_ && !local_mode::enabled())
         credits_label_->setVisible(show_credits);
     if (chat_mode_btn_)
         chat_mode_btn_->setVisible(show_chat);
 
     // Two extra separators were added to bracket the inline pushpin bar at
     // the start of the layout, so the credits/chat separator indices shift by 2.
-    if (separators_.size() >= 7) {
+    if (separators_.size() >= 7 && !local_mode::enabled()) {
         separators_[4]->setVisible(show_credits);
         separators_[5]->setVisible(show_chat);
     }
@@ -311,7 +329,7 @@ void ToolBar::update_clock() {
 void ToolBar::refresh_user_display() {
     const auto& s = auth::AuthManager::instance().session();
     if (!s.authenticated) {
-        user_label_->setText("---");
+        user_label_->setText(local_mode::enabled() ? tr("LOCAL") : QStringLiteral("---"));
         credits_label_->setText("---");
         plan_btn_->setText("---");
         return;
@@ -532,10 +550,14 @@ QMenu* ToolBar::build_help_menu() {
     m->addAction(tr("Terms of Service"), this, [this]() { emit navigate_to("terms"); });
     m->addAction(tr("Privacy Policy"), this, [this]() { emit navigate_to("privacy"); });
     m->addAction(tr("Trademarks"), this, [this]() { emit navigate_to("trademarks"); });
-    m->addSeparator();
-    m->addAction(tr("Check for Updates"), this, [this]() { emit action_triggered("check_updates"); });
-    m->addSeparator();
-    m->addAction(tr("Logout"), this, [this]() { emit action_triggered("logout"); });
+    if (!local_mode::enabled()) {
+        // Both actions need a Fincept session or release feed; in local-only
+        // mode they would be silent no-ops, which reads as broken.
+        m->addSeparator();
+        m->addAction(tr("Check for Updates"), this, [this]() { emit action_triggered("check_updates"); });
+        m->addSeparator();
+        m->addAction(tr("Logout"), this, [this]() { emit action_triggered("logout"); });
+    }
     return m;
 }
 
