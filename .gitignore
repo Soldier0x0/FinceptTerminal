@@ -196,3 +196,9 @@ fincept-qt/docs/CRYPTO_WALLET_CONNECT.md
 *.md
 !README.md
 !**/README.md
+# Fork additions: tracked design docs. `plans/` above would otherwise swallow
+# docs/superpowers/plans/, so the directory itself is re-included first.
+!docs/superpowers/
+!docs/superpowers/plans/
+!docs/superpowers/**/*.md
+!docs/LOCAL_ONLY_MODE.md
