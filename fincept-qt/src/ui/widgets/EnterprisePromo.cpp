@@ -147,8 +147,7 @@ UpgradeDialog::UpgradeDialog(QWidget* parent) : QDialog(parent) {
     // enterprise namespace. `this` stays as connect()'s context object (3rd
     // arg) for lifetime, but capturing it would be unused and Clang builds
     // with -Werror=unused-lambda-capture.
-    connect(compare_btn_, &QPushButton::clicked, this,
-            []() { enterprise::open_url(enterprise::comparison_url()); });
+    connect(compare_btn_, &QPushButton::clicked, this, []() { enterprise::open_url(enterprise::comparison_url()); });
     buttons->addWidget(compare_btn_);
 
     primary_btn_ = new QPushButton;
@@ -178,11 +177,11 @@ UpgradeDialog::UpgradeDialog(QWidget* parent) : QDialog(parent) {
                           "#upgradePrice{color:%3;font-size:13px;font-weight:700;background:transparent;}"
                           "#upgradeNote{color:%6;font-size:11px;background:transparent;}"
                           "#upgradeDontShow{color:%6;font-size:11px;background:transparent;}")
-                      .arg(colors::BG_SURFACE())     // %1
-                      .arg(colors::BORDER_DIM())     // %2
-                      .arg(colors::AMBER())          // %3
-                      .arg(colors::TEXT_PRIMARY())   // %4
-                      .arg(colors::TEXT_SECONDARY()) // %5
+                      .arg(colors::BG_SURFACE())      // %1
+                      .arg(colors::BORDER_DIM())      // %2
+                      .arg(colors::AMBER())           // %3
+                      .arg(colors::TEXT_PRIMARY())    // %4
+                      .arg(colors::TEXT_SECONDARY())  // %5
                       .arg(colors::TEXT_TERTIARY())); // %6
 
     retranslateUi();

@@ -9,8 +9,8 @@
 #include "storage/cache/CacheManager.h"
 
 #include <QJsonDocument>
-#include <QMetaObject>
 #include <QJsonParseError>
+#include <QMetaObject>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>
@@ -143,8 +143,7 @@ void QuantLibClient::call(const QString& endpoint, const QJsonObject& body, Quan
         r.success = false;
         r.error = QStringLiteral("QuantLib cloud API is disabled in local-only mode.");
         LOG_DEBUG(kQuantLibClientTag, "Local-only mode — refusing call to " + endpoint);
-        QMetaObject::invokeMethod(
-            this, [callback = std::move(callback), r]() { callback(r); }, Qt::QueuedConnection);
+        QMetaObject::invokeMethod(this, [callback = std::move(callback), r]() { callback(r); }, Qt::QueuedConnection);
         return;
     }
     // Cache GET endpoints (static reference data) and query-param endpoints

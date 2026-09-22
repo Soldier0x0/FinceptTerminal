@@ -6,7 +6,7 @@
 // Absent when compiled outside the FinceptTerminal target (unit tests): fall
 // back to upstream behaviour so the test binary does not depend on the option.
 #ifndef FINCEPT_LOCAL_ONLY
-#define FINCEPT_LOCAL_ONLY 0
+#    define FINCEPT_LOCAL_ONLY 0
 #endif
 
 namespace fincept::local_mode {

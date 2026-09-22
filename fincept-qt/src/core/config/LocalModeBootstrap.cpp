@@ -36,7 +36,8 @@ QString bootstrap_llm_defaults() {
     if (had_fincept) {
         auto r = repo.delete_provider(QStringLiteral("fincept"));
         if (r.is_err())
-            LOG_WARN(kTag, "bootstrap_llm_defaults: could not delete fincept row — " + QString::fromStdString(r.error()));
+            LOG_WARN(kTag,
+                     "bootstrap_llm_defaults: could not delete fincept row — " + QString::fromStdString(r.error()));
         else
             LOG_INFO(kTag, "Removed Fincept LLM provider row (local-only mode)");
         if (active == QLatin1String("fincept"))
@@ -53,7 +54,8 @@ QString bootstrap_llm_defaults() {
         c.tools_enabled = true;
         auto r = repo.save_provider(c);
         if (r.is_err()) {
-            LOG_WARN(kTag, "bootstrap_llm_defaults: could not seed default provider — " + QString::fromStdString(r.error()));
+            LOG_WARN(kTag,
+                     "bootstrap_llm_defaults: could not seed default provider — " + QString::fromStdString(r.error()));
             return {};
         }
         active = c.provider;

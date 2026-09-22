@@ -227,10 +227,9 @@ void UpdateService::check_for_updates(bool silent) {
 // ── Manifest signature ──────────────────────────────────────────────────────
 
 QByteArray UpdateService::signing_public_key() {
-    const QByteArray hex =
-        QByteArray::fromRawData(UPDATE_SIGNING_PUBLIC_KEY_HEX,
-                                static_cast<qsizetype>(qstrlen(UPDATE_SIGNING_PUBLIC_KEY_HEX)))
-            .trimmed();
+    const QByteArray hex = QByteArray::fromRawData(UPDATE_SIGNING_PUBLIC_KEY_HEX,
+                                                   static_cast<qsizetype>(qstrlen(UPDATE_SIGNING_PUBLIC_KEY_HEX)))
+                               .trimmed();
     if (hex.isEmpty())
         return {};
     const QByteArray raw = QByteArray::fromHex(hex);

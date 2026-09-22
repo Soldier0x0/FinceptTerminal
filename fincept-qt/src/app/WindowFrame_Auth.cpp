@@ -8,10 +8,9 @@
 
 #include "app/WindowFrame.h"
 #include "auth/AuthManager.h"
-
-#include "core/config/LocalMode.h"
 #include "auth/InactivityGuard.h"
 #include "auth/PinManager.h"
+#include "core/config/LocalMode.h"
 #include "core/layout/WorkspaceShell.h"
 #include "core/logging/Logger.h"
 #include "core/session/SessionManager.h"

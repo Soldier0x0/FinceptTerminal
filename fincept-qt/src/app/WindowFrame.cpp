@@ -9,12 +9,12 @@
 #include "auth/lock/LockOverlayController.h"
 #include "core/actions/ActionRegistry.h"
 #include "core/actions/builtin_actions.h"
+#include "core/config/LocalMode.h"
 #include "core/config/ProfileManager.h"
 #include "core/events/EventBus.h"
 #include "core/keys/KeyConfigManager.h"
 #include "core/keys/WindowCycler.h"
 #include "core/layout/LayoutCatalog.h"
-#include "core/config/LocalMode.h"
 #include "core/layout/WorkspaceShell.h"
 #include "core/logging/Logger.h"
 #include "core/panel/PanelMaterialiser.h"
@@ -928,13 +928,13 @@ WindowFrame::WindowFrame(int window_id, QWidget* parent, const WindowId& adopted
             stack_->setCurrentIndex(1);
             layout::WorkspaceShell::load_last_or_default();
         } else if (auth_mgr.is_authenticated() && auth::PinManager::instance().has_pin() && !pin_gate_cleared_) {
-        // If user is authenticated and has a PIN, show lock screen first —
-        // UNLESS this is an additional window opened while an existing
-        // window has already cleared the PIN gate this session.
-        // pin_gate_cleared_ was bootstrapped above from the process-wide
-        // InactivityGuard flag (which is the single source of truth for
-        // "is the terminal locked?"); skipping the prompt here just
-        // mirrors the unlocked state into the new frame.
+            // If user is authenticated and has a PIN, show lock screen first —
+            // UNLESS this is an additional window opened while an existing
+            // window has already cleared the PIN gate this session.
+            // pin_gate_cleared_ was bootstrapped above from the process-wide
+            // InactivityGuard flag (which is the single source of truth for
+            // "is the terminal locked?"); skipping the prompt here just
+            // mirrors the unlocked state into the new frame.
             LOG_INFO("WindowFrame", "Session restored — showing PIN unlock");
             lock_screen_->show_unlock();
             locked_ = true;

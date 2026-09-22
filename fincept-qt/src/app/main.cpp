@@ -13,9 +13,9 @@
 #include "auth/SessionGuard.h"
 #include "core/components/ComponentCatalog.h"
 #include "core/config/AppConfig.h"
+#include "core/config/AppPaths.h"
 #include "core/config/LocalMode.h"
 #include "core/config/LocalModeBootstrap.h"
-#include "core/config/AppPaths.h"
 #include "core/config/ProfileManager.h"
 #include "core/crash/CrashHandler.h"
 #include "core/currency/CurrencyManager.h"
@@ -889,7 +889,8 @@ int main(int argc, char* argv[]) {
         // LlmService consumers. No-op in upstream mode.
         {
             const QString active = fincept::local_mode::bootstrap_llm_defaults();
-            LOG_INFO("App", QString("Active LLM provider after bootstrap: %1").arg(active.isEmpty() ? "<none>" : active));
+            LOG_INFO("App",
+                     QString("Active LLM provider after bootstrap: %1").arg(active.isEmpty() ? "<none>" : active));
         }
 
         // Prune news articles older than 30 days — deferred to run after the event loop
