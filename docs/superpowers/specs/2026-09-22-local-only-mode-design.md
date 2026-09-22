@@ -98,7 +98,7 @@ bool WindowFrame::has_full_access() const {
 }
 ```
 
-Replace the three `auth.session().has_paid_plan()` / `auth_mgr.session().has_paid_plan()` branches in `WindowFrame_Auth.cpp` (two) and `PricingScreen.cpp` (one, `user_has_paid`) with `has_full_access()` (WindowFrame) or `local_mode::enabled() || ...` (PricingScreen, which has no WindowFrame).
+Replace the two `auth.session().has_paid_plan()` branches in `WindowFrame_Auth.cpp` (`on_auth_state_changed`, `on_terminal_unlocked`) with `has_full_access()`. `PricingScreen` also reads `has_paid_plan()` but is unreachable in local mode (the toolbar plan button is hidden and no auth path routes to it), so it is left untouched.
 
 Constructor routing (`WindowFrame.cpp`, the block beginning "Show the app or auth stack based on authentication state"): add a first branch
 
@@ -299,7 +299,6 @@ No socket is opened to `api.fincept.in` on this path. Yahoo/FRED/NSE/Ollama/Groq
 | `fincept-qt/src/services/llm/LlmService.cpp` | fallback uses catalog defaults |
 | `fincept-qt/src/ui/widgets/EnterprisePromo.cpp` | early returns |
 | `fincept-qt/src/ui/navigation/ToolBar.cpp` | hide four widgets; LOCAL label; help-menu filter |
-| `fincept-qt/src/screens/auth/PricingScreen.cpp` | `user_has_paid` includes local mode |
 | `fincept-qt/src/screens/settings/SettingsScreen.cpp` | hide Credentials + Cloud Sync sidebar entries |
 | `fincept-qt/tests/CMakeLists.txt`, `tests/tst_local_mode.cpp`, `tests/tst_provider_catalog.cpp` | tests |
 | `docs/LOCAL_ONLY_MODE.md`, `README.md` | docs |
