@@ -3,6 +3,7 @@
 
 #include "screens/settings/SettingsScreen.h"
 
+#include "core/config/LocalMode.h"
 #include "core/events/EventBus.h"
 #include "core/i18n/LanguageManager.h"
 #include "core/logging/Logger.h"
@@ -155,7 +156,10 @@ SettingsScreen::SettingsScreen(QWidget* parent) : QWidget(parent) {
     make_btn(QStringLiteral("Python Env"), 11, QStringLiteral("packages venv pip uv numpy libraries install upgrade"));
     make_btn(QStringLiteral("Storage & Cache"), 3,
              QStringLiteral("disk database sqlite sql console cache clear delete data danger zone workspaces"));
-    make_btn(QStringLiteral("Cloud Sync"), 15, QStringLiteral("backup sync account devices domains credits"));
+    // Section 15 (CloudSyncSection) stays in the stack so indices are stable;
+    // only its sidebar entry is dropped in local-only mode.
+    if (!local_mode::enabled())
+        make_btn(QStringLiteral("Cloud Sync"), 15, QStringLiteral("backup sync account devices domains credits"));
 
     first->setChecked(true);
     sections_->setCurrentIndex(14);
