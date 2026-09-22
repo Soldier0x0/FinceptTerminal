@@ -5,3 +5,7 @@ unknownMacro
 missingIncludeSystem
 # unusedFunction is noisy in a large Qt project (slots are "unused" from cppcheck's view)
 unusedFunction
+# Dashboard widgets call apply_config() from constructors by design (base-class hook)
+virtualCallInConstructor
+# WorldMapWidget centres on the same point for cx/cy intentionally
+duplicateAssignExpression
