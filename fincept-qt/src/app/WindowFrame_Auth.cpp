@@ -8,6 +8,8 @@
 
 #include "app/WindowFrame.h"
 #include "auth/AuthManager.h"
+
+#include "core/config/LocalMode.h"
 #include "auth/InactivityGuard.h"
 #include "auth/PinManager.h"
 #include "core/layout/WorkspaceShell.h"
@@ -30,7 +32,16 @@
 
 namespace fincept {
 
+bool WindowFrame::has_full_access() const {
+    return local_mode::enabled() || auth::AuthManager::instance().session().has_paid_plan();
+}
+
 void WindowFrame::on_auth_state_changed() {
+    // Local-only mode: auth state never routes the shell. The constructor
+    // already showed the dashboard.
+    if (local_mode::enabled())
+        return;
+
     auto& auth = auth::AuthManager::instance();
 
     // If logged out while the lock screen is active (e.g. max PIN attempts → reauth),
@@ -119,7 +130,7 @@ void WindowFrame::on_auth_state_changed() {
             }
         }
 
-        if (auth.session().has_paid_plan()) {
+        if (has_full_access()) {
             // Defensive: at this point the PIN gate above must have either
             // routed us to the lock screen (and returned) or confirmed
             // pin_gate_cleared_. If we are about to show the shell while
@@ -351,7 +362,7 @@ void WindowFrame::on_terminal_unlocked() {
     // Reset PIN lockout on successful unlock
     auth::PinManager::instance().reset_lockout();
 
-    if (auth.session().has_paid_plan()) {
+    if (has_full_access()) {
         set_shell_visible(true);
         stack_->setCurrentIndex(1);
         // Restore chat bubble based on setting

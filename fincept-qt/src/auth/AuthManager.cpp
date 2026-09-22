@@ -1,5 +1,7 @@
 #include "auth/AuthManager.h"
 
+#include "core/config/LocalMode.h"
+
 #include "auth/AuthApi.h"
 #include "auth/GoogleDesktopLogin.h"
 #include "auth/PinManager.h"
@@ -221,6 +223,17 @@ bool AuthManager::needs_pin_setup() const {
 // ── Initialize ───────────────────────────────────────────────────────────────
 
 void AuthManager::initialize() {
+    if (local_mode::enabled()) {
+        // No Fincept session in local-only mode: nothing is loaded, validated
+        // or refreshed. SessionGuard, CloudSyncEngine, the WindowFrame refresh
+        // timers and auto_configure_fincept_llm() all gate on an authenticated
+        // session and therefore stay inert.
+        LOG_INFO("Auth", "Local-only mode — auth disabled, no session will be loaded");
+        session_ = SessionData{};
+        set_loading(false);
+        emit auth_state_changed();
+        return;
+    }
     set_loading(true);
     load_session();
 

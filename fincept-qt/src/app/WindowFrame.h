@@ -267,6 +267,11 @@ class WindowFrame : public QMainWindow {
     void setup_auth_screens();
     void setup_docking_mode();
     void setup_dock_screens();
+    /// True when the privileged shell may be shown: local-only mode, or an
+    /// authenticated session on a paid plan. Every "paid plan" routing check
+    /// in WindowFrame goes through here so the local-mode bypass has one home.
+    bool has_full_access() const;
+
     void on_auth_state_changed();
     void toggle_chat_mode();
     void show_lock_screen();
