@@ -1,0 +1,186 @@
+name: Release — Linux (fork, automatic)
+
+# Personal fork: build AppImage + .deb on every merge to main and publish a
+# GitHub Release. No macOS/Windows signing secrets required.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'fincept-qt/**'
+      - '.github/workflows/release-fork-linux.yml'
+      - '.github/scripts/build_linux_release.sh'
+      - '.github/scripts/ci_app_checks.sh'
+      - '.github/scripts/sync_scripts.sh'
+  workflow_dispatch:
+
+concurrency:
+  group: release-fork-linux
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+env:
+  BUILD_TYPE: Release
+  QT_VERSION: "6.8.3"
+  QT_MODULES: "qtcharts qtwebsockets qtmultimedia qtwebengine qtwebchannel qtpositioning qtserialport"
+  APP_NAME: FinceptTerminal
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  build-and-release:
+    name: Linux x64 — build + release
+    if: github.repository == 'Soldier0x0/FinceptTerminal'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up ccache
+        uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: fork-linux-release-${{ env.QT_VERSION }}
+          max-size: 500M
+
+      - name: Install system dependencies
+        run: |
+          sudo add-apt-repository universe -y
+          sudo apt-get update -qq
+          sudo apt-get install -y \
+            cmake ninja-build gcc-12 g++-12 \
+            libssl-dev \
+            libgl1-mesa-dev libglu1-mesa-dev \
+            libxkbcommon-dev libxkbcommon-x11-0 \
+            libxcb-cursor0 libxcb-cursor-dev \
+            libxcb-icccm4 libxcb-icccm4-dev \
+            libxcb-image0 libxcb-image0-dev \
+            libxcb-keysyms1 libxcb-keysyms1-dev \
+            libxcb-randr0 \
+            libxcb-render-util0 libxcb-render-util0-dev \
+            libxcb-shape0-dev \
+            libxcb-sync-dev \
+            libxcb-xfixes0-dev \
+            libxcb-xinerama0 libxcb-xinerama0-dev \
+            libxcb-xkb1 libxkbcommon-x11-dev \
+            libdbus-1-dev libfontconfig1-dev libfreetype6-dev \
+            python3 python3-pip pkg-config \
+            wget file libfuse2 patchelf imagemagick zsync
+          echo "CC=gcc-12"  >> "$GITHUB_ENV"
+          echo "CXX=g++-12" >> "$GITHUB_ENV"
+
+      - name: Install Qt ${{ env.QT_VERSION }}
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          arch: linux_gcc_64
+          modules: ${{ env.QT_MODULES }}
+          cache: true
+          cache-key-prefix: qt-fork-linux-release
+
+      - name: Install yt-dlp
+        run: pip install yt-dlp
+
+      - name: Generate Linux icon PNG
+        working-directory: fincept-qt
+        run: |
+          set -euo pipefail
+          if [ ! -f resources/fincept.png ]; then
+            if [ -f resources/icons/app_icon_256.png ]; then
+              cp resources/icons/app_icon_256.png resources/fincept.png
+            elif [ -f resources/fincept.ico ]; then
+              convert "ico:resources/fincept.ico[0]" -resize 256x256 -background none -flatten "png:resources/fincept.png"
+            else
+              convert -size 256x256 xc:'#1a1a1a' "png:resources/fincept.png"
+            fi
+          fi
+          file resources/fincept.png | grep -q 'PNG image data'
+
+      - name: Remove dangling Qt SQL driver plugin CMake configs
+        run: |
+          set -euo pipefail
+          SQL_CMAKE="${QT_ROOT_DIR}/lib/cmake/Qt6Sql"
+          if [ -d "${SQL_CMAKE}" ]; then
+            for drv in QMYSQLDriverPlugin QPSQLDriverPlugin QODBCDriverPlugin QMimerSQLDriverPlugin; do
+              rm -fv "${SQL_CMAKE}/Qt6${drv}"*.cmake || true
+            done
+          fi
+
+      - name: Configure CMake
+        working-directory: fincept-qt
+        run: |
+          cmake -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
+            -DCMAKE_PREFIX_PATH="${QT_ROOT_DIR}" \
+            -DOPENSSL_ROOT_DIR=/usr \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DFINCEPT_REQUIRE_BUNDLED_YTDLP=ON
+
+      - name: Build
+        working-directory: fincept-qt
+        run: cmake --build build --config ${{ env.BUILD_TYPE }} --parallel $(nproc)
+
+      - name: Run self-tests (headless)
+        working-directory: fincept-qt
+        timeout-minutes: 25
+        run: |
+          set -euo pipefail
+          export LD_LIBRARY_PATH="${QT_ROOT_DIR}/lib:${LD_LIBRARY_PATH:-}"
+          bash ../.github/scripts/ci_app_checks.sh selftests "build/${{ env.APP_NAME }}" ci
+
+      - name: Build AppImage + .deb
+        working-directory: fincept-qt
+        run: bash ../.github/scripts/build_linux_release.sh
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          VERSION=$(grep -Po 'project\(FinceptTerminal VERSION \K[0-9]+\.[0-9]+\.[0-9]+' fincept-qt/CMakeLists.txt)
+          [ -n "${VERSION}" ] || { echo "::error::Could not parse VERSION"; exit 1; }
+          TAG="v${VERSION}-linux"
+          SHORT_SHA=$(git rev-parse --short HEAD)
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -f "${TAG}" "${GITHUB_SHA}"
+          git push -f origin "refs/tags/${TAG}"
+
+          DEB="fincept-qt/build/FinceptTerminal-${VERSION}-linux-x64.deb"
+          RUN="fincept-qt/build/FinceptTerminal-${VERSION}-linux-x64-setup.run"
+          ZSYNC="fincept-qt/build/FinceptTerminal-${VERSION}-linux-x64-setup.run.zsync"
+
+          gh release delete "${TAG}" -y 2>/dev/null || true
+
+          NOTES=$(cat <<EOF
+          ## Fincept Terminal ${VERSION} — Linux (local fork)
+
+          Automatic build from \`main\` @ [\`${SHORT_SHA}\`](https://github.com/${{ github.repository }}/commit/${GITHUB_SHA}).
+
+          **Local-only mode** is enabled by default (no Fincept login, Ollama LLM).
+
+          ### Install
+
+          | Format | Command |
+          |--------|---------|
+          | **AppImage** (recommended) | \`chmod +x FinceptTerminal-*-linux-x64-setup.run && ./FinceptTerminal-*-linux-x64-setup.run\` |
+          | **Debian/Ubuntu** | \`sudo apt install ./FinceptTerminal-*-linux-x64.deb\` |
+
+          The \`.deb\` expects system Qt/runtime libraries. The AppImage bundles Qt and is more portable.
+          EOF
+          )
+
+          ASSETS=("${DEB}" "${RUN}")
+          [ -f "${ZSYNC}" ] && ASSETS+=("${ZSYNC}")
+
+          gh release create "${TAG}" \
+            --title "Fincept Terminal ${VERSION} — Linux (local fork)" \
+            --notes "${NOTES}" \
+            "${ASSETS[@]}"
+
+          echo "Published: https://github.com/${{ github.repository }}/releases/tag/${TAG}"

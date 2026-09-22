@@ -28,6 +28,7 @@ env:
 # ═════════════════════════════════════════════════════════════════════════════
 jobs:
   build-windows:
+    if: github.repository == 'Fincept-Corporation/FinceptTerminal'
     name: Windows x64 Installer
     runs-on: windows-2022
 
@@ -699,6 +700,7 @@ jobs:
 # JOB 2 — Linux x64 Installer (self-contained AppImage, served as .run)
 # ═════════════════════════════════════════════════════════════════════════════
   build-linux:
+    if: github.repository == 'Fincept-Corporation/FinceptTerminal'
     name: Linux x64 Installer
     runs-on: ubuntu-22.04
 
@@ -1291,6 +1293,7 @@ jobs:
 # JOB 3 — macOS arm64 Installer (DMG built with hdiutil)
 # ═════════════════════════════════════════════════════════════════════════════
   build-macos:
+    if: github.repository == 'Fincept-Corporation/FinceptTerminal'
     name: macOS arm64 Installer
     runs-on: macos-15
 
@@ -2487,6 +2490,7 @@ jobs:
     needs: [build-windows, build-linux, build-macos]
     runs-on: ubuntu-latest
     if: >-
+      github.repository == 'Fincept-Corporation/FinceptTerminal' &&
       !cancelled() &&
       needs.build-windows.result == 'success' &&
       needs.build-linux.result == 'success' &&
@@ -2581,6 +2585,7 @@ jobs:
     needs: release
     runs-on: ubuntu-latest
     if: >-
+      github.repository == 'Fincept-Corporation/FinceptTerminal' &&
       !cancelled() &&
       needs.release.result == 'success' &&
       startsWith(github.ref, 'refs/tags/')
